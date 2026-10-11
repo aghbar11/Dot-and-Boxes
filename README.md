@@ -1,19 +1,53 @@
-# Dot-and-Boxes
-## 1. Description
-Dots and Boxes is a classic pen-and-paper game. In this project, you will develop a digital version of Dots and Boxes using the C programming language. This version will initially include a two-player mode and then add bot functionality. You will also analyze the algorithmic complexity of key operations, such as determining if a square has been completed, and evaluate the complexity of the strategies used by the bot.
+# Dots and Boxes
 
-## 2. Sprint 1: Two-Player Game
-### 2.1. Description
-Implement a two-player version of Dots and Boxes (Players A and B), where both players interact through a console-based interface. Players take turns drawing a line between two dots. If a player completes a box, they are awarded that box, and their initials will appear inside it (A or B). The game continues until all boxes have been claimed. The winner is the player with the most boxes.
+A terminal version of the classic Dots and Boxes game written in C for CMPS 241 (Systems Programming) at AUB. It supports local two-player games, a minimax bot, and online play over TCP. It can also be set up to boot straight into the game on Alpine Linux.
 
-### 2.2. Requirement
-- Display a 4x5 grid of boxes.
-- Allow two players to take turns connecting dots.
-- Update the board after each move.
-- Check if a move completes a square and award it to the player.
-- Declare the winner when all squares have been claimed.
-- Run the game on a small Linux distribution without a graphical user interface (GUI), such as Alpine Linux.
-- The Linux OS will run inside a Virtual Machine (VM), and your game should launch automatically as the first thing displayed after starting the VM. I.e., when the Alpine Linux VM starts, it should immediately take you to the game without even asking you for a username and password to login.
-- Write your code in multiple .h and .c files and write a Makefile that compiles your code.
-- Debug you code using Valgrind and using GDB
-- Ensure that everything is found on Github
+## Features
+
+- **4×5 board** (5×6 dots) drawn in the terminal, with each box showing its owner (`A` or `B`)
+- **Local mode:** two players on one keyboard, or one player against the bot
+- **Bot:** minimax with alpha-beta pruning and iterative deepening. It searches 5 to 8 moves deep depending on how many moves remain, tries box-completing moves first, and follows the extra-turn rule
+- **Online mode:** an authoritative TCP server that checks every move, keeps score, and passes moves between two clients
+- **Multithreading:** the server runs one `pthread` per client, and each client has a background thread for receiving messages. Both sides synchronize with mutexes and condition variables
+- **Boot to game:** on Alpine Linux the game takes the place of the login prompt on `tty1`
+
+## Requirements
+
+GCC, Make, and POSIX threads. Any Linux distribution works. On Alpine, install `build-base`.
+
+## Build and run
+
+```sh
+make          # builds ./dots_and_boxes
+make run      # builds and runs the game
+make clean    # removes object files and the binary
+```
+
+## Alpine Linux VM setup (launch on boot)
+
+1. Install Alpine in a VM (`setup-alpine`) and log in as `root`.
+2. Get the code:
+   ```sh
+   apk add git
+   git clone <repo-url>
+   cd <repo-folder>
+   ```
+3. Run the setup script, then reboot:
+   ```sh
+   sh setup.sh
+   reboot
+   ```
+
+`setup.sh` installs the toolchain, builds the game, and points `tty1` in `/etc/inittab` at the game binary. After the reboot, the VM opens directly into the game with no login, and the game restarts whenever it exits.
+
+## How to play
+
+When the game starts, choose **1** for local or **2** for online.
+
+To make a move, enter the row and column of two adjacent dots as `r1 c1 r2 c2`. For example, `0 4 0 3` draws the horizontal line between dots (0,4) and (0,3). If your line completes a box, you claim it and play again. The game ends once all 20 boxes are claimed.
+
+### Playing online
+
+1. On the host machine, start the game and choose **2** (online), then **1** (host). You can keep the default port 9090 or enter a different one.
+2. Each player starts the game and chooses **2**, then **2** (join), and enters the host's IP address and port. A player on the same machine as the server can use `127.0.0.1`.
+3. The first player to connect is A and moves first.
